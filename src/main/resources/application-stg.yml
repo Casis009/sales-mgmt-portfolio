@@ -1,0 +1,15 @@
+# 検証環境（OCI 上の Docker Compose）。接続情報は環境変数で渡す（08 移行・リリースで設定）
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_APP_USER}
+    password: ${DB_APP_PASSWORD}
+  flyway:
+    user: ${DB_OWNER_USER}
+    password: ${DB_OWNER_PASSWORD}
+    placeholders:
+      appDbUser: ${DB_APP_USER}
+
+logging:
+  level:
+    jp.co.hikari.hanbai: INFO

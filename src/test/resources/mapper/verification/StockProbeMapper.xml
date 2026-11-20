@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 技術検証 P-01 用（テストのみで使用） -->
+<mapper namespace="jp.co.hikari.hanbai.verification.StockProbeMapper">
+
+  <select id="selectQuantityForUpdate" resultType="int">
+    SELECT quantity
+      FROM t_stock
+     WHERE product_id = #{productId}
+       AND warehouse_id = #{warehouseId}
+       FOR UPDATE
+  </select>
+
+  <update id="addQuantity">
+    UPDATE t_stock
+       SET quantity = quantity + #{delta},
+           updated_at = #{now},
+           updated_by = 0
+     WHERE product_id = #{productId}
+       AND warehouse_id = #{warehouseId}
+  </update>
+
+  <insert id="insertIfAbsent">
+    INSERT INTO t_stock
+      (product_id, warehouse_id, quantity, allocated_quantity, created_at, created_by, updated_at, updated_by)
+    VALUES
+      (#{productId}, #{warehouseId}, 0, 0, #{now}, 0, #{now}, 0)
+    ON CONFLICT (product_id, warehouse_id) DO NOTHING
+  </insert>
+
+</mapper>

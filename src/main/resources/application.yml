@@ -1,0 +1,46 @@
+# 共通設定（ソフトウェア構成 3章）。接続先・ログレベルは application-{dev,stg,prd}.yml に書く。
+spring:
+  application:
+    name: hanbai
+  profiles:
+    # 開発者 PC では指定なしで dev を使う。テストは test、サーバーは環境変数 SPRING_PROFILES_ACTIVE で指定する
+    default: dev
+  flyway:
+    locations: classpath:db/migration
+    placeholders:
+      # V3：操作ログの UPDATE・DELETE 権限を取り消す対象（NF-31）
+      appDbUser: hanbai_app
+  batch:
+    job:
+      # 起動時にジョブを自動実行しない（バッチ詳細設計 1章）
+      enabled: false
+    jdbc:
+      # BATCH_* テーブルは Flyway（V2）で作成する
+      initialize-schema: never
+  messages:
+    basename: messages
+    encoding: UTF-8
+  thymeleaf:
+    cache: true
+
+mybatis:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+hanbai:
+  batch:
+    # バッチを非同期で実行するスレッド数。同時に動くジョブは最大でも BAT-01～03 の3本
+    pool-size: 3

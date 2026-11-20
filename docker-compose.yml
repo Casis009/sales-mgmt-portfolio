@@ -1,0 +1,36 @@
+# 開発環境の PostgreSQL（技術選定書 3章「開発環境」）
+# 起動：docker compose up -d   停止：docker compose down   データも削除：docker compose down -v
+#
+# DB ユーザーはセキュリティ設計 5章（NF-31）に従い2つに分ける。
+#   hanbai_owner：テーブルの所有者。Flyway（DDL）が使用する
+#   hanbai_app  ：アプリケーションが使用する。DML のみ（操作ログは INSERT・SELECT のみ）
+# パスワードは開発用の既定値。変更する場合は .env に DB_OWNER_PASSWORD などを書く（.env は Git に含めない）。
+name: hanbai-dev
+
+services:
+  db:
+    image: postgres:17
+    container_name: hanbai-db
+    environment:
+      POSTGRES_DB: hanbai
+      POSTGRES_USER: ${DB_OWNER_USER:-hanbai_owner}
+      POSTGRES_PASSWORD: ${DB_OWNER_PASSWORD:-hanbai_owner_dev}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      APP_DB_USER: ${DB_APP_USER:-hanbai_app}
+      APP_DB_PASSWORD: ${DB_APP_PASSWORD:-hanbai_app_dev}
+      TZ: Asia/Tokyo
+      PGTZ: Asia/Tokyo
+    ports:
+      # ホスト側は 5433。PC に PostgreSQL がインストールされていると 5432 が競合するため（環境変数 DB_PORT で変更可）
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db-data:

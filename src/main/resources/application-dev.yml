@@ -1,0 +1,18 @@
+# 開発環境（開発者 PC + docker compose の PostgreSQL）
+spring:
+  datasource:
+    # docker-compose.yml のホスト側ポート（既定 5433）と合わせる
+    url: jdbc:postgresql://localhost:${DB_PORT:5433}/hanbai
+    username: hanbai_app
+    password: hanbai_app_dev
+  flyway:
+    # DDL は所有者ユーザーで実行する（セキュリティ設計 5章）
+    user: hanbai_owner
+    password: hanbai_owner_dev
+  thymeleaf:
+    cache: false
+
+logging:
+  level:
+    # 開発環境のみ SQL を出力する（共通処理設計 8章）
+    jp.co.hikari.hanbai: DEBUG

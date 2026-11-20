@@ -6,4 +6,3 @@ target/
 *.iml
 .env
 logs/
-poc/src/main/resources/fonts/*.ttf

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  JasperReports のフォント拡張。帳票（RPT-01 請求書、RPT-02 発注書）で使う日本語フォントを登録する。
+  IPAexゴシック（ipaexg.ttf）は IPA フォントライセンス v1.0 に従い同梱する（同じフォルダのライセンス文書を参照）。
+  PDF にはフォントを埋め込む（Identity-H）。利用者の PC にフォントがなくても同じ見た目で表示・印刷できるようにするため。
+-->
+<fontFamilies>
+  <fontFamily name="IPAexGothic">
+    <normal><![CDATA[fonts/ipaexg.ttf]]></normal>
+    <bold><![CDATA[fonts/ipaexg.ttf]]></bold>
+    <pdfEncoding><![CDATA[Identity-H]]></pdfEncoding>
+    <pdfEmbedded><![CDATA[true]]></pdfEmbedded>
+  </fontFamily>
+</fontFamilies>

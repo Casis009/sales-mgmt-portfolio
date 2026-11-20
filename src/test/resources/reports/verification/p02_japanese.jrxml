@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 技術検証 P-02 用の帳票定義（JasperReports 7 形式）。本番の帳票（RPT-01/02）は製造 6段階で作成する -->
+<jasperReport name="p02_japanese" language="java" pageWidth="595" pageHeight="842" columnWidth="515"
+              leftMargin="40" rightMargin="40" topMargin="40" bottomMargin="40"
+              uuid="0f1e2d3c-4b5a-4678-9abc-def012345678">
+  <parameter name="customerName" class="java.lang.String"/>
+  <parameter name="message" class="java.lang.String"/>
+  <parameter name="symbols" class="java.lang.String"/>
+  <parameter name="amount" class="java.lang.String"/>
+  <title height="260">
+    <element kind="staticText" x="0" y="0" width="515" height="36" fontName="IPAexGothic"
+             fontSize="20.0" hTextAlign="Center">
+      <text><![CDATA[請　求　書]]></text>
+    </element>
+    <element kind="textField" x="0" y="50" width="515" height="24" fontName="IPAexGothic" fontSize="12.0">
+      <expression><![CDATA[$P{customerName}]]></expression>
+    </element>
+    <element kind="textField" x="0" y="80" width="515" height="24" fontName="IPAexGothic" fontSize="10.0">
+      <expression><![CDATA[$P{message}]]></expression>
+    </element>
+    <element kind="textField" x="0" y="110" width="515" height="24" fontName="IPAexGothic" fontSize="10.0">
+      <expression><![CDATA[$P{symbols}]]></expression>
+    </element>
+    <element kind="textField" x="0" y="145" width="515" height="30" fontName="IPAexGothic" fontSize="16.0"
+             bold="true">
+      <expression><![CDATA["ご請求金額（税込）　" + $P{amount}]]></expression>
+    </element>
+    <element kind="staticText" x="0" y="190" width="515" height="40" fontName="IPAexGothic" fontSize="9.0">
+      <text><![CDATA[株式会社ひかり照明商事　〒812-0011 福岡県福岡市博多区（技術検証用のサンプル）]]></text>
+    </element>
+  </title>
+</jasperReport>

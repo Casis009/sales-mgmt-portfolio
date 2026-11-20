@@ -1,0 +1,11 @@
+# 改行コードをリポジトリでは LF に統一する（Linux の CI・コンテナで mvnw やシェルが動くように）
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# バイナリ
+*.ttf binary
+*.pdf binary
+*.xlsx binary
+*.png binary
+*.jar binary
