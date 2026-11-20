@@ -1,0 +1,9 @@
+.sync/
+target/
+*.class
+.idea/
+.vscode/
+*.iml
+.env
+logs/
+poc/src/main/resources/fonts/*.ttf
