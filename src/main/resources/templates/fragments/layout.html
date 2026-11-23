@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!--
+  画面共通レイアウト（画面一覧 5.1）。各画面は th:replace でこのファイルの部品を使う。
+    head        ：<head> の共通部分（タイトル、CSS、JS）
+    header      ：ヘッダー（システム名、メニュー、ログインユーザー、ログアウト）
+    breadcrumb  ：パンくず
+    messages    ：メッセージ表示欄（情報＝緑、警告＝黄、エラー＝赤）
+    pagination  ：ページング（1ページ50件）
+  値の表示は th:text（自動エスケープ）のみを使用し、エスケープしない出力は使用禁止（セキュリティ設計 4章 No.2。CI で検出）。
+-->
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ja">
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title} + ' | 販売管理システム'">画面名 | 販売管理システム</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <script th:src="@{/js/app.js}" defer></script>
+</head>
+<body>
+
+<header class="app-header" th:fragment="header">
+  <a class="app-name" th:href="@{/menu}">販売管理システム</a>
+  <nav class="app-nav" sec:authorize="isAuthenticated()">
+    <a th:href="@{/menu}">メニュー</a>
+  </nav>
+  <div class="app-user" sec:authorize="isAuthenticated()">
+    <span class="user-name" th:text="${#authentication.principal.userName}">山本 太郎</span>
+    <span class="user-roles" th:text="'（' + ${#authentication.principal.roleLabels()} + '）'">（物流担当）</span>
+    <form th:action="@{/logout}" method="post" class="inline">
+      <button type="submit" class="btn btn-link">ログアウト</button>
+    </form>
+  </div>
+</header>
+
+<nav class="breadcrumb" th:fragment="breadcrumb(group, title)" aria-label="パンくず">
+  <span th:if="${group != null}" th:text="${group}">在庫管理</span>
+  <span th:if="${group != null}" class="sep" aria-hidden="true">&gt;</span>
+  <span th:text="${title}">在庫照会</span>
+</nav>
+
+<div class="messages" th:fragment="messages" th:if="${uiMessages != null and !#lists.isEmpty(uiMessages)}"
+     role="status" aria-live="polite">
+  <p th:each="m : ${uiMessages}" class="msg" th:classappend="${m.level().cssClass()}" th:text="${m.text()}">メッセージ</p>
+</div>
+
+<nav class="pagination" th:fragment="pagination(p)" th:if="${p != null and p.total() > 0}" aria-label="ページ">
+  <span class="count" th:text="|${#numbers.formatInteger(p.total(), 1, 'COMMA')}件中 ${#numbers.formatInteger(p.fromIndex(), 1, 'COMMA')}～${#numbers.formatInteger(p.toIndex(), 1, 'COMMA')}件|">120件中 1～50件</span>
+  <a th:if="${p.hasPrevious()}" th:href="${p.url(p.page() - 1)}">前へ</a>
+  <th:block th:each="n : ${p.pageNumbers()}">
+    <span th:if="${n == p.page()}" class="current" aria-current="page" th:text="${n}">1</span>
+    <a th:unless="${n == p.page()}" th:href="${p.url(n)}" th:text="${n}">2</a>
+  </th:block>
+  <a th:if="${p.hasNext()}" th:href="${p.url(p.page() + 1)}">次へ</a>
+</nav>
+
+</body>
+</html>

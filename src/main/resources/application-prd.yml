@@ -10,6 +10,14 @@ spring:
     placeholders:
       appDbUser: ${DB_APP_USER}
 
+server:
+  # Nginx（TLS 終端）経由の接続元IP・スキームを使う（操作ログの IP アドレス）
+  forward-headers-strategy: native
+  servlet:
+    session:
+      cookie:
+        secure: true
+
 logging:
   level:
     # 本番環境では SQL をログに出力しない（共通処理設計 8章）

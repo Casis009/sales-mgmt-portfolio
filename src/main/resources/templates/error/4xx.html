@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<!-- 403・404 以外の 4xx（不正なリクエストなど）。利用者には存在しないページとして表示する（E-091） -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head('エラー')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="content">
+  <div class="messages"><p class="msg msg-error" th:text="#{E-091}">指定されたページは存在しません。</p></div>
+  <p><a th:href="@{/menu}">メニューへ戻る</a></p>
+</main>
+</body>
+</html>

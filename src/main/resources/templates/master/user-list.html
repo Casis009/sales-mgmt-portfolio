@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!-- SCR-011 ユーザー一覧（F-003）。初期表示では検索しない（画面一覧 5.2 No.1） -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head('ユーザー一覧')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<nav th:replace="~{fragments/layout :: breadcrumb('システム管理', 'ユーザー一覧')}"></nav>
+<main class="content">
+  <div th:replace="~{fragments/layout :: messages}"></div>
+
+  <form th:action="@{/admin/users}" th:object="${searchForm}" method="get" class="form search-form">
+    <input type="hidden" name="search" value="1">
+    <div class="row">
+      <div class="field">
+        <label for="keyword">ログインID・氏名</label>
+        <input type="text" th:field="*{keyword}" maxlength="50">
+        <p class="field-error" th:if="${#fields.hasErrors('keyword')}" th:errors="*{keyword}"></p>
+      </div>
+      <div class="field inline-options">
+        <label><input type="checkbox" th:field="*{includeDisabled}"> 無効のユーザーも表示する</label>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">検索</button>
+      <a th:href="@{/admin/users/new}" class="btn">新規登録</a>
+    </div>
+  </form>
+
+  <th:block th:if="${rows != null and !#lists.isEmpty(rows)}">
+    <nav th:replace="~{fragments/layout :: pagination(${pagination})}"></nav>
+    <table class="list">
+      <thead>
+      <tr>
+        <th scope="col">ログインID</th>
+        <th scope="col">氏名</th>
+        <th scope="col">所属</th>
+        <th scope="col">権限</th>
+        <th scope="col">状態</th>
+        <th scope="col">最終ログイン日時</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="r : ${rows}">
+        <td><a th:href="@{/admin/users/{id}/edit(id=${r.userId()})}" th:text="${r.loginId()}">yamamoto</a></td>
+        <td th:text="${r.userName()}">山本 太郎</td>
+        <td th:text="${r.department()}">物流課</td>
+        <td th:text="${r.roleLabels()}">物流担当</td>
+        <td>
+          <span th:text="${r.enabled()} ? '有効' : '無効'" class="badge">有効</span>
+          <span th:if="${r.locked()}" class="badge badge-error">ロック中</span>
+        </td>
+        <td th:text="${r.lastLoginAt() == null} ? '' : ${#temporals.format(r.lastLoginAt(), 'yyyy/MM/dd HH:mm')}">2027/01/18 09:00</td>
+      </tr>
+      </tbody>
+    </table>
+    <nav th:replace="~{fragments/layout :: pagination(${pagination})}"></nav>
+  </th:block>
+</main>
+</body>
+</html>

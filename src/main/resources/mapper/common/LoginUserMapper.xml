@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 認証・パスワード変更（F-001、F-002）で使う m_user の SQL -->
+<mapper namespace="jp.co.hikari.hanbai.common.security.LoginUserMapper">
+
+  <resultMap id="loginUser" type="jp.co.hikari.hanbai.common.security.LoginUserRow" autoMapping="true">
+    <id property="userId" column="user_id"/>
+    <collection property="roles" ofType="jp.co.hikari.hanbai.common.code.Role">
+      <result column="role_code"/>
+    </collection>
+  </resultMap>
+
+  <sql id="userColumns">
+    u.user_id, u.login_id, u.password_hash, u.user_name, u.default_warehouse_id,
+    u.enabled, u.locked, u.failed_login_count, u.password_change_required
+  </sql>
+
+  <select id="findByLoginId" resultMap="loginUser">
+    SELECT <include refid="userColumns"/>, r.role_code
+      FROM m_user u
+      LEFT JOIN m_user_role r ON r.user_id = u.user_id
+     WHERE u.login_id = #{loginId}
+     ORDER BY r.role_code
+  </select>
+
+  <select id="findByLoginIdForUpdate" resultType="jp.co.hikari.hanbai.common.security.LoginUserRow">
+    SELECT <include refid="userColumns"/>
+      FROM m_user u
+     WHERE u.login_id = #{loginId}
+       FOR UPDATE
+  </select>
+
+  <select id="findByIdForUpdate" resultType="jp.co.hikari.hanbai.common.security.LoginUserRow">
+    SELECT <include refid="userColumns"/>
+      FROM m_user u
+     WHERE u.user_id = #{userId}
+       FOR UPDATE
+  </select>
+
+  <!-- 認証の記録は version を変えない（管理者の編集画面が楽観的排他エラーにならないように） -->
+  <update id="recordSuccess">
+    UPDATE m_user
+       SET failed_login_count = 0,
+           last_login_at = #{now}
+     WHERE user_id = #{userId}
+  </update>
+
+  <update id="recordFailure">
+    UPDATE m_user
+       SET failed_login_count = #{failedLoginCount},
+           locked = #{locked}
+     WHERE user_id = #{userId}
+  </update>
+
+  <update id="updatePassword">
+    UPDATE m_user
+       SET password_hash = #{passwordHash},
+           password_change_required = FALSE,
+           version = version + 1,
+           updated_at = #{now},
+           updated_by = #{userId}
+     WHERE user_id = #{userId}
+  </update>
+</mapper>

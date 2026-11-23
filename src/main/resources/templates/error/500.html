@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<!--
+  システムエラー（E-090、HTTP 500。共通処理設計 5章）。
+  受付番号のみを表示し、例外の内容・スタックトレース・SQL は表示しない（NF-32）。
+  Controller 以外で発生したエラー（受付番号なし）は「-」と表示する。
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head('エラー')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="content">
+  <div class="messages">
+    <p class="msg msg-error" th:text="#{E-090(${receiptNumber} ?: '-')}">システムエラーが発生しました。</p>
+  </div>
+  <p><a th:href="@{/menu}">メニューへ戻る</a></p>
+</main>
+</body>
+</html>

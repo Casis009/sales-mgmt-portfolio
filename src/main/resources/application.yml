@@ -17,11 +17,31 @@ spring:
     jdbc:
       # BATCH_* テーブルは Flyway（V2）で作成する
       initialize-schema: never
+  transaction:
+    # オンライン処理のタイムアウト（共通処理設計 1章 No.7）
+    default-timeout: 30s
   messages:
     basename: messages
     encoding: UTF-8
   thymeleaf:
     cache: true
+
+server:
+  servlet:
+    session:
+      # 無操作30分でタイムアウト（NF-26）
+      timeout: 30m
+      cookie:
+        # Cookie の属性（セキュリティ設計 2章 No.3）。Secure は HTTPS の検証・本番環境で有効にする
+        http-only: true
+        same-site: lax
+        secure: false
+  error:
+    # エラー画面にスタックトレース・例外の内容を表示しない（NF-32）
+    include-stacktrace: never
+    include-message: never
+    whitelabel:
+      enabled: false
 
 mybatis:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -29,6 +49,8 @@ mybatis:
     map-underscore-to-camel-case: true
     default-fetch-size: 100
     default-statement-timeout: 30
+    # 区分値の Enum は CodeEnum のコードで DB と相互変換する（ソフトウェア構成 5章 No.4）
+    default-enum-type-handler: jp.co.hikari.hanbai.common.code.CodeEnumTypeHandler
 
 management:
   endpoints:
@@ -41,6 +63,11 @@ management:
         enabled: true
 
 hanbai:
+  # ユーザーが1人もいない場合に起動時に作成する初期管理者（決定 PD-19）。
+  # パスワードは環境変数で渡し、リポジトリに含めない。初回ログイン時にパスワード変更を求める
+  initial-admin:
+    login-id: admin
+    password: ${HANBAI_INITIAL_ADMIN_PASSWORD:}
   batch:
     # バッチを非同期で実行するスレッド数。同時に動くジョブは最大でも BAT-01～03 の3本
     pool-size: 3

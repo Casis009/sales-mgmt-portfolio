@@ -32,6 +32,19 @@ jobs:
           java-version: "21"
           cache: maven
 
+      # 禁止パターンの検出（セキュリティ設計 4章 No.1・No.2）
+      #   MyBatis の ${}（SQL インジェクション）、Thymeleaf のエスケープしない出力属性（XSS）
+      - name: Check forbidden patterns
+        run: |
+          status=0
+          if grep -rn --include='*.xml' '\${' src/main/resources/mapper; then
+            echo "::error::MyBatis の \${} は使用禁止です（#{} を使用する）"; status=1
+          fi
+          if grep -rn --include='*.html' 'th:utext' src/main/resources/templates; then
+            echo "::error::th:utext は使用禁止です（th:text を使用する）"; status=1
+          fi
+          exit $status
+
       # ubuntu-latest には Docker が入っているため、Testcontainers は追加設定なしで動作する
       - name: Build and test
         run: ./mvnw -B -ntp verify

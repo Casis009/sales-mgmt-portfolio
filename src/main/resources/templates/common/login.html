@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<!-- SCR-001 ログイン（画面設計書 SCR-001） -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head('ログイン')}"></head>
+<body class="login-page">
+<main class="login-box">
+  <h1>販売管理システム</h1>
+  <div th:replace="~{fragments/layout :: messages}"></div>
+  <form th:action="@{/login}" method="post" class="form" data-once>
+    <div class="field">
+      <label for="loginId">ログインID <span class="req" aria-label="必須">※</span></label>
+      <input type="text" id="loginId" name="loginId" th:value="${loginId}" maxlength="20"
+             autocomplete="username" required autofocus>
+    </div>
+    <div class="field">
+      <!-- エラー時もパスワードは再表示しない（SCR-001 項目定義） -->
+      <label for="password">パスワード <span class="req" aria-label="必須">※</span></label>
+      <input type="password" id="password" name="password" maxlength="64"
+             autocomplete="current-password" required>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">ログイン</button>
+    </div>
+  </form>
+</main>
+</body>
+</html>
