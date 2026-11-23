@@ -39,7 +39,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @Import(TestcontainersConfiguration.class)
 class UserManagementIT {
 
-  private final LoginUser admin = TestUsers.of(Role.ADMIN);
+  /** 操作者（DB に存在しないユーザーID。登録したユーザーと同じIDにならないようにする）。 */
+  private final LoginUser admin =
+      new LoginUser(
+          Long.MAX_VALUE, "operator", "操作者", null, List.of(Role.ADMIN), true, false, false, null);
 
   @Autowired MockMvc mvc;
   @Autowired JdbcTemplate jdbc;
@@ -236,6 +239,78 @@ class UserManagementIT {
 
     assertThat(result).contains("他のユーザーが先に更新しました。");
     assertThat(operationLogCount()).isZero();
+  }
+
+  private Map<String, String> editParams(String roles, String enabled) {
+    Map<String, String> params = new HashMap<>();
+    params.put("version", "0");
+    params.put("loginId", "admin1");
+    params.put("userName", "管理者");
+    params.put("roles", roles);
+    params.put("enabled", enabled);
+    return params;
+  }
+
+  private String submitAs(LoginUser operator, long userId, Map<String, String> params)
+      throws Exception {
+    MockHttpSession session = new MockHttpSession();
+    MvcResult opened =
+        mvc.perform(get("/admin/users/" + userId + "/edit").session(session).with(user(operator)))
+            .andReturn();
+    String token =
+        (String) opened.getModelAndView().getModel().get(TransactionTokenManager.PARAM);
+    MockHttpServletRequestBuilder request =
+        post("/admin/users/" + userId)
+            .session(session)
+            .with(csrf())
+            .with(user(operator))
+            .param(TransactionTokenManager.PARAM, token);
+    params.forEach((k, v) -> request.param(k, v.split(",", -1)));
+    return mvc.perform(request).andReturn().getResponse().getContentAsString();
+  }
+
+  @Test
+  void 自分自身の無効化とADMINの削除はE018で変更されない() throws Exception {
+    long selfId = TestUsers.insert(jdbc, "admin1", Role.ADMIN);
+    TestUsers.insert(jdbc, "admin2", Role.ADMIN);
+    LoginUser self =
+        new LoginUser(selfId, "admin1", "管理者", null, List.of(Role.ADMIN), true, false, false, null);
+
+    assertThat(submitAs(self, selfId, editParams("ADMIN", "false")))
+        .contains("自分自身を無効にしたり、システム管理者の権限を外したりすることはできません。");
+    assertThat(submitAs(self, selfId, editParams("SALES", "true")))
+        .contains("自分自身を無効にしたり、システム管理者の権限を外したりすることはできません。");
+    // ADMIN を維持する自分自身の変更はできる（成功時はリダイレクトのため本文は空）
+    assertThat(submitAs(self, selfId, editParams("ADMIN,SALES", "true")))
+        .doesNotContain("自分自身を無効");
+
+    assertThat(
+            jdbc.queryForList(
+                "SELECT role_code FROM m_user_role WHERE user_id = ? ORDER BY role_code",
+                String.class,
+                selfId))
+        .containsExactly("ADMIN", "SALES");
+  }
+
+  @Test
+  void 有効なシステム管理者が0人になる変更はE019で他に管理者がいれば変更できる() throws Exception {
+    long onlyAdmin = TestUsers.insert(jdbc, "admin1", Role.ADMIN);
+    TestUsers.insert(jdbc, "retired", false, false, 0, false, Role.ADMIN);
+
+    assertThat(submitAs(admin, onlyAdmin, editParams("SALES", "true")))
+        .contains("有効なシステム管理者が1人もいなくなるため、変更できません。");
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT enabled FROM m_user WHERE user_id = ?", Boolean.class, onlyAdmin))
+        .isTrue();
+    assertThat(operationLogCount()).isZero();
+
+    TestUsers.insert(jdbc, "admin2", Role.ADMIN);
+    submitAs(admin, onlyAdmin, editParams("ADMIN", "false"));
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT enabled FROM m_user WHERE user_id = ?", Boolean.class, onlyAdmin))
+        .isFalse();
   }
 
   @Test

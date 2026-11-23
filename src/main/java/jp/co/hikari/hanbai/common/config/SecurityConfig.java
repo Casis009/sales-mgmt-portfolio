@@ -14,9 +14,11 @@ import jp.co.hikari.hanbai.common.security.LogoutRecorder;
 import jp.co.hikari.hanbai.common.security.PasswordChangeRequiredFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -41,6 +43,9 @@ public class SecurityConfig {
   /** セッション切れで遷移したことを示すパラメータ（E-013）。 */
   public static final String TIMEOUT_PARAM = "timeout";
 
+  /** 静的ファイル（セッションを使わずに配信する）。 */
+  private static final String[] STATIC_RESOURCES = {"/css/**", "/js/**"};
+
   /** マスタの一覧画面（全員が照会できる）。 */
   private static final String[] MASTER_LISTS = {
     "/master/products", "/master/warehouses", "/master/partners"
@@ -50,7 +55,32 @@ public class SecurityConfig {
   private static final String SESSION_COOKIE = "JSESSIONID";
 
   /**
-   * セキュリティフィルタを定義する。
+   * 静的ファイル（CSS・JS）のセキュリティフィルタ。画面用のフィルタより先に適用する。
+   *
+   * <p>セッションを参照・作成しない。アプリの再起動後やセッション切れの後は、ブラウザが存在しないセッションIDを送るため、
+   * 画面用のフィルタではセッション切れ（E-013）として静的ファイルの要求までログイン画面へ転送され、CSS が適用されない画面が
+   * 表示される。静的ファイルは利用者に依存しないため、セッションを使わずに配信する（セキュリティ設計 2章 No.1）。
+   *
+   * @param http HttpSecurity
+   * @return フィルタチェーン
+   * @throws Exception 設定に失敗した場合
+   */
+  @Bean
+  @Order(1)
+  public SecurityFilterChain staticResourceFilterChain(HttpSecurity http) throws Exception {
+    http.securityMatcher(STATIC_RESOURCES)
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .securityContext(context -> context.disable())
+        .requestCache(cache -> cache.disable())
+        .csrf(csrf -> csrf.disable())
+        .headers(headers -> headers.frameOptions(frame -> frame.deny()));
+    return http.build();
+  }
+
+  /**
+   * 画面のセキュリティフィルタを定義する。
    *
    * @param http HttpSecurity
    * @param failureHandler 認証失敗時の処理
@@ -59,6 +89,7 @@ public class SecurityConfig {
    * @throws Exception 設定に失敗した場合
    */
   @Bean
+  @Order(2)
   public SecurityFilterChain securityFilterChain(
       HttpSecurity http, LoginFailureHandler failureHandler, LogoutRecorder logoutRecorder)
       throws Exception {

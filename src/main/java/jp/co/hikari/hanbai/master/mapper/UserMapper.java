@@ -98,6 +98,16 @@ public interface UserMapper {
       @Param("operatorId") long operatorId);
 
   /**
+   * 指定のロールを持つ有効なユーザーを、ユーザーIDの昇順に行ロックして返す。
+   *
+   * <p>システム管理者が0人になる変更を、同時に実行された別の変更とすれ違わずに判定するために使う。
+   *
+   * @param role ロール
+   * @return ユーザーID
+   */
+  List<Long> lockEnabledUsersWithRole(@Param("role") Role role);
+
+  /**
    * ユーザーのロールをすべて削除する。
    *
    * @param userId ユーザーID

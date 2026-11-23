@@ -181,6 +181,7 @@ public class UserService {
     // 変更前のロールは、ロールを置き換える前に取得しておく（操作内容の記録に使う）
     final List<Role> rolesBefore = rolesOf(before.getUserId());
     checkWarehouse(command.defaultWarehouseId());
+    checkAdminRemains(before, rolesBefore, command, operator);
 
     User after = new User();
     after.setUserId(before.getUserId());
@@ -237,6 +238,34 @@ public class UserService {
   private void checkWarehouse(Long warehouseId) {
     if (warehouseId != null && !warehouseService.isEnabled(warehouseId)) {
       throw new BusinessException(MessageId.E_NOT_FOUND, MessageHelper.label("defaultWarehouseId"));
+    }
+  }
+
+  /**
+   * システム管理者がいなくなる変更を防ぐ（決定 PD-23）。
+   *
+   * <ul>
+   *   <li>自分自身の無効化・自分の ADMIN ロールの削除は不可（E-018）
+   *   <li>変更の結果、有効な ADMIN が0人になる場合は不可（E-019）。同時に別の管理者を変更した場合にすれ違わないよう、
+   *       有効な ADMIN の行をロックしてから判定する
+   * </ul>
+   */
+  private void checkAdminRemains(
+      User before, List<Role> rolesBefore, UserCommand command, LoginUser operator) {
+    boolean keepsAdmin = command.enabled() && command.roles().contains(Role.ADMIN);
+    if (keepsAdmin) {
+      return;
+    }
+    if (before.getUserId() == operator.getUserId()) {
+      throw new BusinessException(MessageId.E_SELF_ADMIN_CHANGE);
+    }
+    boolean wasAdmin = before.isEnabled() && rolesBefore.contains(Role.ADMIN);
+    if (!wasAdmin) {
+      return;
+    }
+    List<Long> admins = mapper.lockEnabledUsersWithRole(Role.ADMIN);
+    if (admins.stream().allMatch(id -> id.equals(before.getUserId()))) {
+      throw new BusinessException(MessageId.E_NO_ADMIN_LEFT);
     }
   }
 

@@ -91,6 +91,17 @@
        AND version = #{u.version}
   </update>
 
+  <!-- ロックの取得順序を固定する（ユーザーIDの昇順）。デッドロックを防ぐため -->
+  <select id="lockEnabledUsersWithRole" resultType="long">
+    SELECT u.user_id
+      FROM m_user u
+     WHERE u.enabled
+       AND EXISTS (SELECT 1 FROM m_user_role r
+                    WHERE r.user_id = u.user_id AND r.role_code = #{role})
+     ORDER BY u.user_id
+       FOR UPDATE
+  </select>
+
   <delete id="deleteRoles">
     DELETE FROM m_user_role WHERE user_id = #{userId}
   </delete>

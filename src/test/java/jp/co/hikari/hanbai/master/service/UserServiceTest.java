@@ -3,6 +3,7 @@ package jp.co.hikari.hanbai.master.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -169,6 +170,57 @@ class UserServiceTest {
     when(mapper.update(any(), eq(false), any(), eq(1L))).thenReturn(1);
 
     assertThat(service().update(command(20L, 3, null, true), admin).detail()).isNull();
+  }
+
+  private static UserCommand adminCommand(long userId, boolean enabled, Role... roles) {
+    return new UserCommand(
+        userId, 3, "x", "管理者", null, null, List.of(roles), enabled, false, null);
+  }
+
+  private void existingAdmin(long userId) {
+    User user = existing(false);
+    user.setUserId(userId);
+    when(mapper.findById(userId)).thenReturn(Optional.of(user));
+    when(mapper.findRoles(List.of(userId))).thenReturn(List.of(new UserRole(userId, Role.ADMIN)));
+  }
+
+  @Test
+  void 自分自身を無効にする変更と自分のADMINを外す変更はE018() {
+    existingAdmin(1L);
+    assertThatThrownBy(() -> service().update(adminCommand(1L, false, Role.ADMIN), admin))
+        .extracting("messageId")
+        .isEqualTo("E-018");
+    assertThatThrownBy(() -> service().update(adminCommand(1L, true, Role.SALES), admin))
+        .extracting("messageId")
+        .isEqualTo("E-018");
+    verify(mapper, never()).update(any(), anyBoolean(), any(), anyLong());
+  }
+
+  @Test
+  void 有効なADMINが変更対象の1人だけならE019() {
+    existingAdmin(20L);
+    when(mapper.lockEnabledUsersWithRole(Role.ADMIN)).thenReturn(List.of(20L));
+    assertThatThrownBy(() -> service().update(adminCommand(20L, false, Role.ADMIN), admin))
+        .extracting("messageId")
+        .isEqualTo("E-019");
+    verify(mapper, never()).update(any(), anyBoolean(), any(), anyLong());
+  }
+
+  @Test
+  void 他に有効なADMINがいれば他の管理者のADMINを外せる() {
+    existingAdmin(20L);
+    when(mapper.lockEnabledUsersWithRole(Role.ADMIN)).thenReturn(List.of(1L, 20L));
+    when(mapper.update(any(), eq(false), any(), eq(1L))).thenReturn(1);
+    assertThat(service().update(adminCommand(20L, true, Role.SALES), admin).detail())
+        .contains("権限：システム管理者→営業担当");
+  }
+
+  @Test
+  void 自分自身でもADMINを維持する変更はできる() {
+    existingAdmin(1L);
+    when(mapper.update(any(), eq(false), any(), eq(1L))).thenReturn(1);
+    service().update(adminCommand(1L, true, Role.ADMIN, Role.SALES), admin);
+    verify(mapper, never()).lockEnabledUsersWithRole(any());
   }
 
   @Test

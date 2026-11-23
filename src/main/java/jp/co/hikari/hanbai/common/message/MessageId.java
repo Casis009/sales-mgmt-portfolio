@@ -61,6 +61,12 @@ public final class MessageId {
   /** 新しいパスワードと確認用のパスワードが一致しません。 */
   public static final String E_PASSWORD_CONFIRM = "E-017";
 
+  /** 自分自身を無効にしたり、システム管理者の権限を外したりすることはできません。 */
+  public static final String E_SELF_ADMIN_CHANGE = "E-018";
+
+  /** 有効なシステム管理者が1人もいなくなるため、変更できません。 */
+  public static final String E_NO_ADMIN_LEFT = "E-019";
+
   /** 他のユーザーが先に更新しました。 */
   public static final String E_OPTIMISTIC_LOCK = "E-020";
 
