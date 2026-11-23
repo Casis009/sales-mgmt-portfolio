@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<!-- 500 以外の 5xx。500 と同じ表示（E-090） -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head('エラー')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="content">
+  <div class="messages"><p class="msg msg-error" th:text="#{E-090('-')}">システムエラーが発生しました。</p></div>
+  <p><a th:href="@{/menu}">メニューへ戻る</a></p>
+</main>
+</body>
+</html>

@@ -6,7 +6,8 @@ import java.util.List;
 /**
  * 業務エラー（共通処理設計 5章）。メッセージ一覧のメッセージIDと埋め込み値を持つ。
  *
- * <p>画面への振り分け（GlobalExceptionHandler）は製造 2段階で実装する。
+ * <p>Controller で捕捉し、入力内容を保持したまま元の画面に表示する。捕捉されなかった場合は {@link
+ * GlobalExceptionHandler} がシステムエラーとして扱う。
  */
 public class BusinessException extends RuntimeException {
 

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!-- SCR-002 メニュー（ダッシュボード）。画面一覧 5.3 -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head('メニュー')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<nav th:replace="~{fragments/layout :: breadcrumb(null, 'メニュー')}"></nav>
+<main class="content">
+  <div th:replace="~{fragments/layout :: messages}"></div>
+
+  <section class="dashboard" th:if="${!#lists.isEmpty(dashboardItems)}" aria-label="ダッシュボード">
+    <a th:each="d : ${dashboardItems}" class="dash-card" th:href="@{${d.url()}}">
+      <span class="dash-label" th:text="${d.label()}">発注アラート件数</span>
+      <span class="dash-count num" th:text="${#numbers.formatInteger(d.count(), 1, 'COMMA')}">0</span>
+    </a>
+  </section>
+
+  <section class="menu-groups">
+    <div class="menu-group" th:each="g : ${menuGroups}">
+      <h2 th:text="${g.title()}">在庫管理</h2>
+      <ul>
+        <li th:each="i : ${g.items()}">
+          <a th:href="@{${i.url()}}" th:text="${i.label()}">在庫照会</a>
+        </li>
+      </ul>
+    </div>
+  </section>
+</main>
+</body>
+</html>

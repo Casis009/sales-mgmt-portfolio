@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- ユーザー管理（F-003、SCR-011・SCR-012）。パスワードハッシュは登録時のみ扱い、参照しない -->
+<mapper namespace="jp.co.hikari.hanbai.master.mapper.UserMapper">
+
+  <resultMap id="userRole" type="jp.co.hikari.hanbai.master.dto.UserRole">
+    <constructor>
+      <!-- _long＝基本型の long（MyBatis の別名で long は java.lang.Long） -->
+      <arg column="user_id" javaType="_long"/>
+      <arg column="role_code" javaType="jp.co.hikari.hanbai.common.code.Role"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="columns">
+    user_id, login_id, user_name, department, default_warehouse_id,
+    enabled, locked, failed_login_count, last_login_at, version
+  </sql>
+
+  <sql id="where">
+    <where>
+      <if test="!c.includeDisabled">AND enabled</if>
+      <if test="c.keyword != null">
+        AND (login_id LIKE #{c.keywordPattern} ESCAPE '\'
+             OR user_name LIKE #{c.keywordPattern} ESCAPE '\')
+      </if>
+    </where>
+  </sql>
+
+  <select id="countAll" resultType="long">
+    SELECT COUNT(*) FROM m_user
+  </select>
+
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM m_user
+    <include refid="where"/>
+  </select>
+
+  <select id="search" resultType="jp.co.hikari.hanbai.master.model.User">
+    SELECT <include refid="columns"/>
+      FROM m_user
+    <include refid="where"/>
+     ORDER BY login_id
+     LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="findRoles" resultMap="userRole">
+    SELECT user_id, role_code
+      FROM m_user_role
+     WHERE user_id IN
+     <foreach collection="userIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+     ORDER BY user_id, role_code
+  </select>
+
+  <select id="findById" resultType="jp.co.hikari.hanbai.master.model.User">
+    SELECT <include refid="columns"/>
+      FROM m_user
+     WHERE user_id = #{userId}
+  </select>
+
+  <select id="existsByLoginId" resultType="boolean">
+    SELECT EXISTS (SELECT 1 FROM m_user WHERE login_id = #{loginId})
+  </select>
+
+  <!-- 初期パスワードのため、パスワード変更要求フラグを true とする（セキュリティ設計 1章 No.4） -->
+  <insert id="insert" useGeneratedKeys="true" keyProperty="u.userId" keyColumn="user_id">
+    INSERT INTO m_user (
+      login_id, password_hash, user_name, department, default_warehouse_id,
+      enabled, locked, failed_login_count, password_change_required, version,
+      created_at, created_by, updated_at, updated_by
+    ) VALUES (
+      #{u.loginId}, #{passwordHash}, #{u.userName}, #{u.department}, #{u.defaultWarehouseId},
+      #{u.enabled}, FALSE, 0, TRUE, 0,
+      #{now}, #{operatorId}, #{now}, #{operatorId}
+    )
+  </insert>
+
+  <update id="update">
+    UPDATE m_user
+       SET user_name = #{u.userName},
+           department = #{u.department},
+           default_warehouse_id = #{u.defaultWarehouseId},
+           enabled = #{u.enabled},
+           <if test="unlock">
+           locked = FALSE,
+           failed_login_count = 0,
+           </if>
+           version = version + 1,
+           updated_at = #{now},
+           updated_by = #{operatorId}
+     WHERE user_id = #{u.userId}
+       AND version = #{u.version}
+  </update>
+
+  <delete id="deleteRoles">
+    DELETE FROM m_user_role WHERE user_id = #{userId}
+  </delete>
+
+  <insert id="insertRole">
+    INSERT INTO m_user_role (user_id, role_code, created_at, created_by)
+    VALUES (#{userId}, #{role}, #{now}, #{operatorId})
+  </insert>
+</mapper>

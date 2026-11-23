@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 操作ログ（TBL-006）。UPDATE・DELETE は定義しない（NF-31。DB ユーザーの権限でも禁止） -->
+<mapper namespace="jp.co.hikari.hanbai.common.operationlog.OperationLogMapper">
+
+  <insert id="insert">
+    INSERT INTO t_operation_log (
+      operated_at, user_id, login_id, ip_address, screen_id,
+      operation_type, target_type, target_key, detail, result
+    ) VALUES (
+      #{operatedAt}, #{userId}, #{loginId}, #{ipAddress}, #{screenId},
+      #{operationType}, #{targetType}, #{targetKey}, #{detail}, #{result}
+    )
+  </insert>
+
+  <sql id="where">
+    <where>
+      <if test="c.operatedFrom != null">AND operated_at &gt;= #{c.operatedFrom}</if>
+      <if test="c.operatedToExclusive != null">AND operated_at &lt; #{c.operatedToExclusive}</if>
+      <if test="c.loginId != null">AND login_id = #{c.loginId}</if>
+      <if test="c.operationType != null">AND operation_type = #{c.operationType}</if>
+      <if test="c.target != null">
+        AND (target_type LIKE #{c.targetPattern} ESCAPE '\'
+             OR target_key LIKE #{c.targetPattern} ESCAPE '\')
+      </if>
+    </where>
+  </sql>
+
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM t_operation_log
+    <include refid="where"/>
+  </select>
+
+  <select id="search" resultType="jp.co.hikari.hanbai.common.operationlog.OperationLog">
+    SELECT operation_log_id, operated_at, user_id, login_id, ip_address, screen_id,
+           operation_type, target_type, target_key, detail, result
+      FROM t_operation_log
+    <include refid="where"/>
+     ORDER BY operated_at DESC, operation_log_id DESC
+     LIMIT #{limit} OFFSET #{offset}
+  </select>
+</mapper>

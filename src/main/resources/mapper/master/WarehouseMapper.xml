@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 倉庫（TBL-102）。製造 2段階ではユーザー管理の所属倉庫に必要な参照のみ（倉庫マスタ F-102 の実装時に拡張） -->
+<mapper namespace="jp.co.hikari.hanbai.master.mapper.WarehouseMapper">
+
+  <resultMap id="option" type="jp.co.hikari.hanbai.master.dto.WarehouseOption">
+    <constructor>
+      <!-- _long＝基本型の long（MyBatis の別名で long は java.lang.Long） -->
+      <arg column="warehouse_id" javaType="_long"/>
+      <arg column="warehouse_code" javaType="string"/>
+      <arg column="warehouse_name" javaType="string"/>
+    </constructor>
+  </resultMap>
+
+  <select id="findEnabled" resultMap="option">
+    SELECT warehouse_id, warehouse_code, warehouse_name
+      FROM m_warehouse
+     WHERE enabled
+     ORDER BY warehouse_code
+  </select>
+
+  <select id="existsEnabled" resultType="boolean">
+    SELECT EXISTS (SELECT 1 FROM m_warehouse WHERE warehouse_id = #{warehouseId} AND enabled)
+  </select>
+</mapper>

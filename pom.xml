@@ -57,6 +57,11 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
+    <!-- 操作ログの記録（@OperationLogged を AOP で処理する。共通処理設計 7章） -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-aspectj</artifactId>
+    </dependency>
 
     <!-- DB -->
     <dependency>

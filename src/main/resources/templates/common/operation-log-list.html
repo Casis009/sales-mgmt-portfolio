@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<!-- SCR-013 操作ログ照会（F-005。画面一覧 5.3）。照会のみ（変更・削除不可、NF-31） -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head('操作ログ照会')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<nav th:replace="~{fragments/layout :: breadcrumb('システム管理', '操作ログ照会')}"></nav>
+<main class="content">
+  <div th:replace="~{fragments/layout :: messages}"></div>
+
+  <form th:action="@{/admin/operation-logs}" th:object="${searchForm}" method="get" class="form search-form">
+    <input type="hidden" name="search" value="1">
+    <div class="row">
+      <div class="field">
+        <label for="operatedFrom">操作日時（開始）</label>
+        <input type="datetime-local" th:field="*{operatedFrom}">
+        <p class="field-error" th:if="${#fields.hasErrors('operatedFrom')}" th:errors="*{operatedFrom}"></p>
+      </div>
+      <div class="field">
+        <label for="operatedTo">操作日時（終了）</label>
+        <input type="datetime-local" th:field="*{operatedTo}">
+        <p class="field-error" th:if="${#fields.hasErrors('operatedTo')}" th:errors="*{operatedTo}"></p>
+      </div>
+      <div class="field">
+        <label for="loginId">ログインID</label>
+        <input type="text" th:field="*{loginId}" maxlength="20">
+        <p class="field-error" th:if="${#fields.hasErrors('loginId')}" th:errors="*{loginId}"></p>
+      </div>
+      <div class="field">
+        <label for="operationType">操作種別</label>
+        <select th:field="*{operationType}">
+          <option value="">（すべて）</option>
+          <option th:each="t : ${operationTypes}" th:value="${t}" th:text="${t.label}">ログイン</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="target">対象（種別・キー）</label>
+        <input type="text" th:field="*{target}" maxlength="50">
+        <p class="field-error" th:if="${#fields.hasErrors('target')}" th:errors="*{target}"></p>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">検索</button>
+    </div>
+  </form>
+
+  <th:block th:if="${rows != null and !#lists.isEmpty(rows)}">
+    <nav th:replace="~{fragments/layout :: pagination(${pagination})}"></nav>
+    <table class="list">
+      <thead>
+      <tr>
+        <th scope="col">操作日時</th>
+        <th scope="col">ログインID</th>
+        <th scope="col">IPアドレス</th>
+        <th scope="col">画面ID</th>
+        <th scope="col">操作種別</th>
+        <th scope="col">対象種別</th>
+        <th scope="col">対象キー</th>
+        <th scope="col">操作内容</th>
+        <th scope="col">結果</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="r : ${rows}">
+        <td th:text="${#temporals.format(r.operatedAt, 'yyyy/MM/dd HH:mm:ss')}">2027/01/18 09:00:00</td>
+        <td th:text="${r.loginId}">yamamoto</td>
+        <td th:text="${r.ipAddress}">10.0.0.1</td>
+        <td th:text="${r.screenId}">SCR-405</td>
+        <td th:text="${r.operationType.label}">登録</td>
+        <td th:text="${r.targetType}">t_shipment</td>
+        <td th:text="${r.targetKey}">SH27010001</td>
+        <td th:text="${r.detail}"></td>
+        <td><span th:text="${r.result.label}" class="badge"
+                  th:classappend="${r.result.name() == 'FAILURE'} ? 'badge-error' : ''">成功</span></td>
+      </tr>
+      </tbody>
+    </table>
+    <nav th:replace="~{fragments/layout :: pagination(${pagination})}"></nav>
+  </th:block>
+</main>
+</body>
+</html>

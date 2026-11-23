@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!-- SCR-012 ユーザー登録・編集（F-003。画面一覧 5.3） -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head(${form.isNew()} ? 'ユーザー登録' : 'ユーザー編集')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<nav th:replace="~{fragments/layout :: breadcrumb('システム管理', ${form.isNew()} ? 'ユーザー登録' : 'ユーザー編集')}"></nav>
+<main class="content">
+  <div th:replace="~{fragments/layout :: messages}"></div>
+
+  <form th:action="${form.isNew()} ? @{/admin/users} : @{/admin/users/{id}(id=${form.userId})}"
+        th:object="${form}" method="post" class="form" data-once>
+    <input type="hidden" th:name="${T(jp.co.hikari.hanbai.common.web.TransactionTokenManager).PARAM}" th:value="${_txToken}">
+    <input type="hidden" th:field="*{version}">
+
+    <div class="field">
+      <label for="loginId">ログインID <span class="req" aria-label="必須" th:if="${form.isNew()}">※</span></label>
+      <input th:if="${form.isNew()}" type="text" th:field="*{loginId}" maxlength="20" autocomplete="off">
+      <th:block th:unless="${form.isNew()}">
+        <span th:text="*{loginId}">yamamoto</span>
+        <input type="hidden" th:field="*{loginId}">
+      </th:block>
+      <p class="hint" th:if="${form.isNew()}">半角英数字4～20文字。登録後は変更できません。</p>
+      <p class="field-error" th:if="${#fields.hasErrors('loginId')}" th:errors="*{loginId}"></p>
+    </div>
+
+    <div class="field">
+      <label for="userName">氏名 <span class="req" aria-label="必須">※</span></label>
+      <input type="text" th:field="*{userName}" maxlength="50">
+      <p class="field-error" th:if="${#fields.hasErrors('userName')}" th:errors="*{userName}"></p>
+    </div>
+
+    <div class="field">
+      <label for="department">所属</label>
+      <input type="text" th:field="*{department}" maxlength="50">
+      <p class="field-error" th:if="${#fields.hasErrors('department')}" th:errors="*{department}"></p>
+    </div>
+
+    <div class="field">
+      <label for="defaultWarehouseId">所属倉庫</label>
+      <select th:field="*{defaultWarehouseId}">
+        <option value="">（なし）</option>
+        <option th:each="w : ${warehouses}" th:value="${w.warehouseId()}"
+                th:text="${w.warehouseCode()} + ' ' + ${w.warehouseName()}">HQ 本社倉庫</option>
+      </select>
+    </div>
+
+    <fieldset class="field">
+      <legend>権限 <span class="req" aria-label="必須">※</span></legend>
+      <div class="inline-options">
+        <label th:each="r : ${allRoles}">
+          <input type="checkbox" th:field="*{roles}" th:value="${r}"> <span th:text="${r.label}">営業担当</span>
+        </label>
+      </div>
+      <p class="field-error" th:if="${#fields.hasErrors('roles')}" th:errors="*{roles}"></p>
+    </fieldset>
+
+    <fieldset class="field">
+      <legend>状態</legend>
+      <div class="inline-options">
+        <label><input type="radio" th:field="*{enabled}" value="true"> 有効</label>
+        <label><input type="radio" th:field="*{enabled}" value="false"> 無効</label>
+      </div>
+    </fieldset>
+
+    <div class="field" th:if="${detail != null and detail.user().locked}">
+      <span class="badge badge-error">ロック中</span>
+      <span th:text="|（認証失敗 ${detail.user().failedLoginCount} 回）|">（認証失敗 5 回）</span>
+      <div class="inline-options">
+        <label><input type="checkbox" th:field="*{unlock}"> ロックを解除する</label>
+      </div>
+    </div>
+
+    <div class="field" th:if="${form.isNew()}">
+      <label for="initialPassword">初期パスワード <span class="req" aria-label="必須">※</span></label>
+      <input type="password" id="initialPassword" name="initialPassword" autocomplete="new-password">
+      <p class="hint">8文字以上64文字以下で、英字と数字を両方含めてください。初回ログイン時に変更を求めます。</p>
+      <p class="field-error" th:if="${#fields.hasErrors('initialPassword')}" th:errors="*{initialPassword}"></p>
+    </div>
+
+    <p th:if="${detail != null and detail.user().lastLoginAt != null}" class="hint"
+       th:text="|最終ログイン日時：${#temporals.format(detail.user().lastLoginAt, 'yyyy/MM/dd HH:mm')}|">最終ログイン日時</p>
+
+    <div class="actions">
+      <button type="submit" class="btn btn-primary" th:text="${form.isNew()} ? '登録' : '更新'">登録</button>
+      <a th:href="@{/admin/users(search=1)}" class="btn">一覧へ戻る</a>
+    </div>
+  </form>
+</main>
+</body>
+</html>

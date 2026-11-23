@@ -12,6 +12,11 @@ spring:
   thymeleaf:
     cache: false
 
+hanbai:
+  initial-admin:
+    # 開発環境（開発者 PC のローカル DB）のみの既定値。初回ログイン時に変更を求められる
+    password: ${HANBAI_INITIAL_ADMIN_PASSWORD:Admin2027}
+
 logging:
   level:
     # 開発環境のみ SQL を出力する（共通処理設計 8章）
