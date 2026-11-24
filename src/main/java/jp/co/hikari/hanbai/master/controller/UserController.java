@@ -238,7 +238,11 @@ public class UserController {
   private String showForm(HttpSession session, Model model, UserDetail detail) {
     model.addAttribute("detail", detail);
     model.addAttribute("allRoles", List.of(Role.values()));
-    model.addAttribute("warehouses", warehouseService.findEnabledOptions());
+    // 現在の所属倉庫は、無効になっていても選択肢に残す（編集画面で値が消えないように）
+    UserForm form = (UserForm) model.getAttribute(FORM);
+    model.addAttribute(
+        "warehouses",
+        warehouseService.findOptions(form == null ? null : form.getDefaultWarehouseId()));
     model.addAttribute(TransactionTokenManager.PARAM, tokenManager.issue(session, FORM_KEY));
     return FORM_VIEW;
   }

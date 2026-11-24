@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!-- SCR-112 倉庫登録・編集（F-102）。倉庫コードは登録後に変更できない -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head(${form.isNew()} ? '倉庫登録' : '倉庫編集')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<nav th:replace="~{fragments/layout :: breadcrumb('マスタ管理', ${form.isNew()} ? '倉庫登録' : '倉庫編集')}"></nav>
+<main class="content">
+  <div th:replace="~{fragments/layout :: messages}"></div>
+
+  <form th:action="${form.isNew()} ? @{/master/warehouses} : @{/master/warehouses/{id}(id=${form.warehouseId})}"
+        th:object="${form}" method="post" class="form" data-once>
+    <input type="hidden" th:name="${T(jp.co.hikari.hanbai.common.web.TransactionTokenManager).PARAM}" th:value="${_txToken}">
+    <input type="hidden" th:field="*{version}">
+
+    <div class="field">
+      <label for="warehouseCode">倉庫コード <span class="req" aria-label="必須" th:if="${form.isNew()}">※</span></label>
+      <input th:if="${form.isNew()}" type="text" th:field="*{warehouseCode}" maxlength="10">
+      <th:block th:unless="${form.isNew()}">
+        <span th:text="*{warehouseCode}">HQ</span>
+        <input type="hidden" th:field="*{warehouseCode}">
+      </th:block>
+      <p class="hint" th:if="${form.isNew()}">半角英数字とハイフン10文字以内。登録後は変更できません。</p>
+      <p class="field-error" th:if="${#fields.hasErrors('warehouseCode')}" th:errors="*{warehouseCode}"></p>
+    </div>
+
+    <div class="field">
+      <label for="warehouseName">倉庫名 <span class="req" aria-label="必須">※</span></label>
+      <input type="text" th:field="*{warehouseName}" maxlength="50">
+      <p class="field-error" th:if="${#fields.hasErrors('warehouseName')}" th:errors="*{warehouseName}"></p>
+    </div>
+
+    <div class="field">
+      <label for="postalCode">郵便番号</label>
+      <input type="text" th:field="*{postalCode}" maxlength="8" placeholder="812-0011">
+      <p class="field-error" th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></p>
+    </div>
+
+    <div class="field">
+      <label for="address">住所</label>
+      <input type="text" th:field="*{address}" maxlength="200">
+      <p class="hint">発注書の納入場所に印字します。</p>
+      <p class="field-error" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></p>
+    </div>
+
+    <div class="field">
+      <label for="tel">電話番号</label>
+      <input type="text" th:field="*{tel}" maxlength="20">
+      <p class="field-error" th:if="${#fields.hasErrors('tel')}" th:errors="*{tel}"></p>
+    </div>
+
+    <fieldset class="field">
+      <legend>状態</legend>
+      <div class="inline-options">
+        <label><input type="radio" th:field="*{enabled}" value="true"> 有効</label>
+        <label><input type="radio" th:field="*{enabled}" value="false"> 無効</label>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" class="btn btn-primary" th:text="${form.isNew()} ? '登録' : '更新'">登録</button>
+      <a th:href="@{/master/warehouses(search=1)}" class="btn">一覧へ戻る</a>
+    </div>
+  </form>
+</main>
+</body>
+</html>

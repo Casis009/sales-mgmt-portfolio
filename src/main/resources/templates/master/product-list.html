@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<!-- SCR-101 商品一覧（F-101）。登録・編集のリンクは物流担当・システム管理者のみ表示（権限マトリクス 2.1） -->
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ja">
+<head th:replace="~{fragments/layout :: head('商品一覧')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<nav th:replace="~{fragments/layout :: breadcrumb('マスタ管理', '商品一覧')}"></nav>
+<main class="content">
+  <div th:replace="~{fragments/layout :: messages}"></div>
+
+  <form th:action="@{/master/products}" th:object="${searchForm}" method="get" class="form search-form">
+    <input type="hidden" name="search" value="1">
+    <div class="row">
+      <div class="field">
+        <label for="keyword">商品コード・品名・型番</label>
+        <input type="text" th:field="*{keyword}" maxlength="50">
+        <p class="field-error" th:if="${#fields.hasErrors('keyword')}" th:errors="*{keyword}"></p>
+      </div>
+      <div class="field">
+        <label for="supplierId">主仕入先</label>
+        <select th:field="*{supplierId}">
+          <option value="">（すべて）</option>
+          <option th:each="s : ${suppliers}" th:value="${s.partnerId()}" th:text="${s.label()}">S001 九州照明工業</option>
+        </select>
+      </div>
+      <div class="field inline-options">
+        <label><input type="checkbox" th:field="*{includeDisabled}"> 取扱中止の商品も表示する</label>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">検索</button>
+      <a sec:authorize="hasAnyRole('WAREHOUSE', 'ADMIN')" th:href="@{/master/products/new}" class="btn">新規登録</a>
+    </div>
+  </form>
+
+  <th:block th:if="${rows != null and !#lists.isEmpty(rows)}">
+    <nav th:replace="~{fragments/layout :: pagination(${pagination})}"></nav>
+    <table class="list">
+      <thead>
+      <tr>
+        <th scope="col">商品コード</th>
+        <th scope="col">品名</th>
+        <th scope="col">型番</th>
+        <th scope="col">単位</th>
+        <th scope="col" class="num">標準販売単価</th>
+        <th scope="col" class="num">標準仕入単価</th>
+        <th scope="col">税区分</th>
+        <th scope="col">主仕入先</th>
+        <th scope="col">状態</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="r : ${rows}">
+        <td>
+          <a sec:authorize="hasAnyRole('WAREHOUSE', 'ADMIN')" th:href="@{/master/products/{id}/edit(id=${r.productId()})}" th:text="${r.productCode()}">LED-001</a>
+          <span sec:authorize="!hasAnyRole('WAREHOUSE', 'ADMIN')" th:text="${r.productCode()}">LED-001</span>
+        </td>
+        <td th:text="${r.productName()}">LEDダウンライト</td>
+        <td th:text="${r.modelNumber()}">DL-100</td>
+        <td th:text="${r.unit()}">台</td>
+        <td class="num" th:text="${#numbers.formatInteger(r.standardSalesPrice(), 1, 'COMMA')}">3,000</td>
+        <td class="num" th:text="${#numbers.formatInteger(r.standardPurchasePrice(), 1, 'COMMA')}">2,000</td>
+        <td th:text="${r.taxCategory().label}">標準税率</td>
+        <td th:text="${r.mainSupplierName()}">九州照明工業</td>
+        <td><span th:text="${r.enabled()} ? '有効' : '取扱中止'" class="badge">有効</span></td>
+      </tr>
+      </tbody>
+    </table>
+    <nav th:replace="~{fragments/layout :: pagination(${pagination})}"></nav>
+  </th:block>
+</main>
+</body>
+</html>

@@ -15,6 +15,7 @@ import jp.co.hikari.hanbai.common.code.Role;
 import jp.co.hikari.hanbai.common.security.LoginUser;
 import jp.co.hikari.hanbai.common.security.TestUsers;
 import jp.co.hikari.hanbai.common.web.TransactionTokenManager;
+import jp.co.hikari.hanbai.master.MasterTestData;
 import jp.co.hikari.hanbai.master.dto.UserCommand;
 import jp.co.hikari.hanbai.master.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +55,7 @@ class UserManagementIT {
   @BeforeEach
   void setUp() {
     TestUsers.clean(jdbc);
-    jdbc.update("DELETE FROM m_warehouse");
+    MasterTestData.clean(jdbc);
     warehouseId =
         jdbc.queryForObject(
             "INSERT INTO m_warehouse (warehouse_code, warehouse_name, enabled,"

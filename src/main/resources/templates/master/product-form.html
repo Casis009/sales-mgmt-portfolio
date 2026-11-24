@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!-- SCR-102 商品登録・編集（F-101、F-104 発注点設定）。商品コードは登録後に変更できない -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head(${form.isNew()} ? '商品登録' : '商品編集')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<nav th:replace="~{fragments/layout :: breadcrumb('マスタ管理', ${form.isNew()} ? '商品登録' : '商品編集')}"></nav>
+<main class="content">
+  <div th:replace="~{fragments/layout :: messages}"></div>
+
+  <form th:action="${form.isNew()} ? @{/master/products} : @{/master/products/{id}(id=${form.productId})}"
+        th:object="${form}" method="post" class="form" data-once>
+    <input type="hidden" th:name="${T(jp.co.hikari.hanbai.common.web.TransactionTokenManager).PARAM}" th:value="${_txToken}">
+    <input type="hidden" th:field="*{version}">
+
+    <div class="field">
+      <label for="productCode">商品コード <span class="req" aria-label="必須" th:if="${form.isNew()}">※</span></label>
+      <input th:if="${form.isNew()}" type="text" th:field="*{productCode}" maxlength="20">
+      <th:block th:unless="${form.isNew()}">
+        <span th:text="*{productCode}">LED-001</span>
+        <input type="hidden" th:field="*{productCode}">
+      </th:block>
+      <p class="hint" th:if="${form.isNew()}">半角英数字とハイフン20文字以内。登録後は変更できません。</p>
+      <p class="field-error" th:if="${#fields.hasErrors('productCode')}" th:errors="*{productCode}"></p>
+    </div>
+
+    <div class="field">
+      <label for="productName">品名 <span class="req" aria-label="必須">※</span></label>
+      <input type="text" th:field="*{productName}" maxlength="100">
+      <p class="field-error" th:if="${#fields.hasErrors('productName')}" th:errors="*{productName}"></p>
+    </div>
+
+    <div class="field">
+      <label for="modelNumber">型番</label>
+      <input type="text" th:field="*{modelNumber}" maxlength="50">
+      <p class="field-error" th:if="${#fields.hasErrors('modelNumber')}" th:errors="*{modelNumber}"></p>
+    </div>
+
+    <div class="field">
+      <label for="unit">単位 <span class="req" aria-label="必須">※</span></label>
+      <input type="text" th:field="*{unit}" maxlength="10" placeholder="台、個、箱">
+      <p class="field-error" th:if="${#fields.hasErrors('unit')}" th:errors="*{unit}"></p>
+    </div>
+
+    <div class="field">
+      <label for="standardSalesPrice">標準販売単価（税抜・円） <span class="req" aria-label="必須">※</span></label>
+      <input type="text" th:field="*{standardSalesPrice}" inputmode="numeric" class="num">
+      <p class="field-error" th:if="${#fields.hasErrors('standardSalesPrice')}" th:errors="*{standardSalesPrice}"></p>
+    </div>
+
+    <div class="field">
+      <label for="standardPurchasePrice">標準仕入単価（税抜・円） <span class="req" aria-label="必須">※</span></label>
+      <input type="text" th:field="*{standardPurchasePrice}" inputmode="numeric" class="num">
+      <p class="field-error" th:if="${#fields.hasErrors('standardPurchasePrice')}" th:errors="*{standardPurchasePrice}"></p>
+    </div>
+
+    <fieldset class="field">
+      <legend>税区分 <span class="req" aria-label="必須">※</span></legend>
+      <div class="inline-options">
+        <label th:each="t : ${taxCategories}">
+          <input type="radio" th:field="*{taxCategory}" th:value="${t}"> <span th:text="${t.label}">標準税率</span>
+        </label>
+      </div>
+      <p class="field-error" th:if="${#fields.hasErrors('taxCategory')}" th:errors="*{taxCategory}"></p>
+    </fieldset>
+
+    <div class="field">
+      <label for="mainSupplierId">主仕入先</label>
+      <select th:field="*{mainSupplierId}">
+        <option value="">（なし）</option>
+        <option th:each="s : ${suppliers}" th:value="${s.partnerId()}" th:text="${s.label()}">S001 九州照明工業</option>
+      </select>
+    </div>
+
+    <fieldset class="field">
+      <legend>倉庫ごとの発注点・標準発注数（F-104）</legend>
+      <p class="hint">両方空欄の倉庫は発注点チェックの対象外です。発注点のみ入力した場合、標準発注数は 0 になります。</p>
+      <table class="list">
+        <thead>
+        <tr>
+          <th scope="col">倉庫</th>
+          <th scope="col" class="num">発注点</th>
+          <th scope="col" class="num">標準発注数</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="s, st : *{settings}">
+          <td>
+            <span th:text="${s.warehouseLabel}">HQ 本社倉庫</span>
+            <input type="hidden" th:field="*{settings[__${st.index}__].warehouseId}">
+            <input type="hidden" th:field="*{settings[__${st.index}__].warehouseLabel}">
+          </td>
+          <td>
+            <input type="text" th:field="*{settings[__${st.index}__].reorderPoint}" inputmode="numeric" class="num"
+                   th:attr="aria-label=|発注点（${s.warehouseLabel}）|">
+            <p class="field-error" th:if="${#fields.hasErrors('settings[__${st.index}__].reorderPoint')}"
+               th:errors="*{settings[__${st.index}__].reorderPoint}"></p>
+          </td>
+          <td>
+            <input type="text" th:field="*{settings[__${st.index}__].standardOrderQuantity}" inputmode="numeric" class="num"
+                   th:attr="aria-label=|標準発注数（${s.warehouseLabel}）|">
+            <p class="field-error" th:if="${#fields.hasErrors('settings[__${st.index}__].standardOrderQuantity')}"
+               th:errors="*{settings[__${st.index}__].standardOrderQuantity}"></p>
+          </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(form.settings)}">
+          <td colspan="3">有効な倉庫がありません。先に倉庫マスタを登録してください。</td>
+        </tr>
+        </tbody>
+      </table>
+    </fieldset>
+
+    <fieldset class="field">
+      <legend>状態</legend>
+      <div class="inline-options">
+        <label><input type="radio" th:field="*{enabled}" value="true"> 有効</label>
+        <label><input type="radio" th:field="*{enabled}" value="false"> 取扱中止</label>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" class="btn btn-primary" th:text="${form.isNew()} ? '登録' : '更新'">登録</button>
+      <a th:href="@{/master/products(search=1)}" class="btn">一覧へ戻る</a>
+    </div>
+  </form>
+</main>
+</body>
+</html>

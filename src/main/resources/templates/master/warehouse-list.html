@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!-- SCR-111 倉庫一覧（F-102）。登録・編集のリンクはシステム管理者のみ表示（権限マトリクス 2.1） -->
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ja">
+<head th:replace="~{fragments/layout :: head('倉庫一覧')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<nav th:replace="~{fragments/layout :: breadcrumb('マスタ管理', '倉庫一覧')}"></nav>
+<main class="content">
+  <div th:replace="~{fragments/layout :: messages}"></div>
+
+  <form th:action="@{/master/warehouses}" th:object="${searchForm}" method="get" class="form search-form">
+    <input type="hidden" name="search" value="1">
+    <div class="row">
+      <div class="field">
+        <label for="keyword">倉庫コード・倉庫名</label>
+        <input type="text" th:field="*{keyword}" maxlength="50">
+        <p class="field-error" th:if="${#fields.hasErrors('keyword')}" th:errors="*{keyword}"></p>
+      </div>
+      <div class="field inline-options">
+        <label><input type="checkbox" th:field="*{includeDisabled}"> 無効の倉庫も表示する</label>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">検索</button>
+      <a sec:authorize="hasRole('ADMIN')" th:href="@{/master/warehouses/new}" class="btn">新規登録</a>
+    </div>
+  </form>
+
+  <th:block th:if="${rows != null and !#lists.isEmpty(rows)}">
+    <nav th:replace="~{fragments/layout :: pagination(${pagination})}"></nav>
+    <table class="list">
+      <thead>
+      <tr>
+        <th scope="col">倉庫コード</th>
+        <th scope="col">倉庫名</th>
+        <th scope="col">住所</th>
+        <th scope="col">電話番号</th>
+        <th scope="col">状態</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="r : ${rows}">
+        <td>
+          <a sec:authorize="hasRole('ADMIN')" th:href="@{/master/warehouses/{id}/edit(id=${r.warehouseId})}" th:text="${r.warehouseCode}">HQ</a>
+          <span sec:authorize="!hasRole('ADMIN')" th:text="${r.warehouseCode}">HQ</span>
+        </td>
+        <td th:text="${r.warehouseName}">本社倉庫</td>
+        <td th:text="${r.postalCode == null} ? ${r.address} : '〒' + ${r.postalCode} + ' ' + ${r.address ?: ''}">〒812-0011 福岡市博多区</td>
+        <td th:text="${r.tel}">092-000-0000</td>
+        <td><span th:text="${r.enabled} ? '有効' : '無効'" class="badge">有効</span></td>
+      </tr>
+      </tbody>
+    </table>
+    <nav th:replace="~{fragments/layout :: pagination(${pagination})}"></nav>
+  </th:block>
+</main>
+</body>
+</html>

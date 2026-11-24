@@ -2,11 +2,9 @@ package jp.co.hikari.hanbai.master.service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import jp.co.hikari.hanbai.common.code.OperationResult;
@@ -16,6 +14,7 @@ import jp.co.hikari.hanbai.common.exception.BusinessException;
 import jp.co.hikari.hanbai.common.exception.OptimisticLockException;
 import jp.co.hikari.hanbai.common.message.MessageHelper;
 import jp.co.hikari.hanbai.common.message.MessageId;
+import jp.co.hikari.hanbai.common.operationlog.ChangeDetail;
 import jp.co.hikari.hanbai.common.operationlog.OperationLog;
 import jp.co.hikari.hanbai.common.operationlog.OperationLogService;
 import jp.co.hikari.hanbai.common.operationlog.OperationLogTarget;
@@ -162,7 +161,7 @@ public class UserService {
     }
     insertRoles(user.getUserId(), command.roles(), now, operator.getUserId());
     String detail = "権限：" + labels(command.roles()) + "、状態：" + enabledLabel(command.enabled());
-    return new Target(command.loginId(), detail);
+    return OperationLogTarget.of(command.loginId(), detail);
   }
 
   /**
@@ -180,7 +179,10 @@ public class UserService {
     User before = mapper.findById(command.userId()).orElseThrow(OptimisticLockException::new);
     // 変更前のロールは、ロールを置き換える前に取得しておく（操作内容の記録に使う）
     final List<Role> rolesBefore = rolesOf(before.getUserId());
-    checkWarehouse(command.defaultWarehouseId());
+    // 所属倉庫を変えない場合は、その倉庫が後から無効になっていても更新できるようにする
+    if (!java.util.Objects.equals(before.getDefaultWarehouseId(), command.defaultWarehouseId())) {
+      checkWarehouse(command.defaultWarehouseId());
+    }
     checkAdminRemains(before, rolesBefore, command, operator);
 
     User after = new User();
@@ -195,7 +197,8 @@ public class UserService {
     }
     mapper.deleteRoles(before.getUserId());
     insertRoles(before.getUserId(), command.roles(), now, operator.getUserId());
-    return new Target(before.getLoginId(), changes(before, rolesBefore, command, unlock));
+    return OperationLogTarget.of(
+        before.getLoginId(), changes(before, rolesBefore, command, unlock));
   }
 
   /**
@@ -294,22 +297,17 @@ public class UserService {
   /** 主要な項目の変更前後（共通処理設計 7.1）。変更のない項目は記録しない。 */
   private static String changes(
       User before, List<Role> rolesBefore, UserCommand command, boolean unlock) {
-    List<String> items = new ArrayList<>();
-    addChange(items, "氏名", before.getUserName(), command.userName());
-    addChange(items, "所属", before.getDepartment(), command.department());
-    addChange(items, "所属倉庫ID", before.getDefaultWarehouseId(), command.defaultWarehouseId());
-    addChange(items, "権限", labels(rolesBefore), labels(command.roles()));
-    addChange(items, "状態", enabledLabel(before.isEnabled()), enabledLabel(command.enabled()));
+    ChangeDetail detail =
+        new ChangeDetail()
+            .change("氏名", before.getUserName(), command.userName())
+            .change("所属", before.getDepartment(), command.department())
+            .change("所属倉庫ID", before.getDefaultWarehouseId(), command.defaultWarehouseId())
+            .change("権限", labels(rolesBefore), labels(command.roles()))
+            .change("状態", enabledLabel(before.isEnabled()), enabledLabel(command.enabled()));
     if (unlock) {
-      items.add("ロック解除");
+      detail.note("ロック解除");
     }
-    return items.isEmpty() ? null : String.join("、", items);
-  }
-
-  private static void addChange(List<String> items, String name, Object before, Object after) {
-    if (!Objects.equals(before, after)) {
-      items.add(name + "：" + Objects.toString(before, "なし") + "→" + Objects.toString(after, "なし"));
-    }
+    return detail.build();
   }
 
   private static String labels(List<Role> roles) {
@@ -319,7 +317,4 @@ public class UserService {
   private static String enabledLabel(boolean enabled) {
     return enabled ? "有効" : "無効";
   }
-
-  /** 操作ログの対象。 */
-  private record Target(String targetKey, String detail) implements OperationLogTarget {}
 }
