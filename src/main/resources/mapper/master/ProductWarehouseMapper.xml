@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 商品倉庫設定（F-104、TBL-104）。行が存在しない「商品 × 倉庫」は発注点チェックの対象外 -->
+<mapper namespace="jp.co.hikari.hanbai.master.mapper.ProductWarehouseMapper">
+
+  <resultMap id="row" type="jp.co.hikari.hanbai.master.dto.ReorderSettingRow">
+    <constructor>
+      <arg column="warehouse_id" javaType="_long"/>
+      <arg column="warehouse_code" javaType="string"/>
+      <arg column="warehouse_name" javaType="string"/>
+      <arg column="enabled" javaType="_boolean"/>
+      <arg column="reorder_point" javaType="java.lang.Integer"/>
+      <arg column="standard_order_quantity" javaType="java.lang.Integer"/>
+    </constructor>
+  </resultMap>
+
+  <!-- 同じマスタ管理の倉庫を、画面の行（倉庫の一覧）として結合する -->
+  <select id="findRows" resultMap="row">
+    SELECT w.warehouse_id, w.warehouse_code, w.warehouse_name, w.enabled,
+           pw.reorder_point, pw.standard_order_quantity
+      FROM m_warehouse w
+      LEFT JOIN m_product_warehouse pw
+        ON pw.warehouse_id = w.warehouse_id
+       AND pw.product_id = #{productId}
+     WHERE w.enabled OR pw.product_id IS NOT NULL
+     ORDER BY w.warehouse_code
+  </select>
+
+  <insert id="insert">
+    INSERT INTO m_product_warehouse (
+      product_id, warehouse_id, reorder_point, standard_order_quantity,
+      created_at, created_by, updated_at, updated_by
+    ) VALUES (
+      #{productId}, #{warehouseId}, #{reorderPoint}, #{standardOrderQuantity},
+      #{now}, #{operatorId}, #{now}, #{operatorId}
+    )
+  </insert>
+
+  <update id="update">
+    UPDATE m_product_warehouse
+       SET reorder_point = #{reorderPoint},
+           standard_order_quantity = #{standardOrderQuantity},
+           updated_at = #{now},
+           updated_by = #{operatorId}
+     WHERE product_id = #{productId}
+       AND warehouse_id = #{warehouseId}
+  </update>
+
+  <delete id="delete">
+    DELETE FROM m_product_warehouse
+     WHERE product_id = #{productId}
+       AND warehouse_id = #{warehouseId}
+  </delete>
+</mapper>

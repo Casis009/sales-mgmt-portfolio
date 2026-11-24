@@ -177,7 +177,8 @@ class LoginIT {
 
   @Test
   void 許可されたロールで存在しないページを開くとE091を表示する() throws Exception {
-    mvc.perform(get("/master/products").with(user(TestUsers.of(Role.SALES))))
+    // 在庫照会は製造 3段階で実装する（それまでは、許可されたロールでも存在しないページ）
+    mvc.perform(get("/stock/stocks").with(user(TestUsers.of(Role.SALES))))
         .andExpect(status().isNotFound())
         .andExpect(content().string(containsString("指定されたページは存在しません。")));
   }

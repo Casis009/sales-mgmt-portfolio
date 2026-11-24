@@ -1,25 +1,88 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<!-- 倉庫（TBL-102）。製造 2段階ではユーザー管理の所属倉庫に必要な参照のみ（倉庫マスタ F-102 の実装時に拡張） -->
+<!-- 倉庫マスタ（F-102、TBL-102） -->
 <mapper namespace="jp.co.hikari.hanbai.master.mapper.WarehouseMapper">
 
   <resultMap id="option" type="jp.co.hikari.hanbai.master.dto.WarehouseOption">
     <constructor>
-      <!-- _long＝基本型の long（MyBatis の別名で long は java.lang.Long） -->
+      <!-- _long／_boolean＝基本型（MyBatis の別名で long は java.lang.Long） -->
       <arg column="warehouse_id" javaType="_long"/>
       <arg column="warehouse_code" javaType="string"/>
       <arg column="warehouse_name" javaType="string"/>
+      <arg column="enabled" javaType="_boolean"/>
     </constructor>
   </resultMap>
 
-  <select id="findEnabled" resultMap="option">
-    SELECT warehouse_id, warehouse_code, warehouse_name
+  <select id="findOptions" resultMap="option">
+    SELECT warehouse_id, warehouse_code, warehouse_name, enabled
       FROM m_warehouse
      WHERE enabled
+     <if test="includeId != null">OR warehouse_id = #{includeId}</if>
      ORDER BY warehouse_code
   </select>
 
   <select id="existsEnabled" resultType="boolean">
     SELECT EXISTS (SELECT 1 FROM m_warehouse WHERE warehouse_id = #{warehouseId} AND enabled)
   </select>
+
+  <sql id="columns">
+    warehouse_id, warehouse_code, warehouse_name, postal_code, address, tel, enabled, version
+  </sql>
+
+  <sql id="where">
+    <where>
+      <if test="!c.includeDisabled">AND enabled</if>
+      <if test="c.keyword != null">
+        AND (warehouse_code LIKE #{c.keywordPattern} ESCAPE '\'
+             OR warehouse_name LIKE #{c.keywordPattern} ESCAPE '\')
+      </if>
+    </where>
+  </sql>
+
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM m_warehouse
+    <include refid="where"/>
+  </select>
+
+  <select id="search" resultType="jp.co.hikari.hanbai.master.model.Warehouse">
+    SELECT <include refid="columns"/>
+      FROM m_warehouse
+    <include refid="where"/>
+     ORDER BY warehouse_code
+     LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="findById" resultType="jp.co.hikari.hanbai.master.model.Warehouse">
+    SELECT <include refid="columns"/>
+      FROM m_warehouse
+     WHERE warehouse_id = #{warehouseId}
+  </select>
+
+  <select id="existsByCode" resultType="boolean">
+    SELECT EXISTS (SELECT 1 FROM m_warehouse WHERE warehouse_code = #{warehouseCode})
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="w.warehouseId" keyColumn="warehouse_id">
+    INSERT INTO m_warehouse (
+      warehouse_code, warehouse_name, postal_code, address, tel, enabled, version,
+      created_at, created_by, updated_at, updated_by
+    ) VALUES (
+      #{w.warehouseCode}, #{w.warehouseName}, #{w.postalCode}, #{w.address}, #{w.tel}, #{w.enabled}, 0,
+      #{now}, #{operatorId}, #{now}, #{operatorId}
+    )
+  </insert>
+
+  <update id="update">
+    UPDATE m_warehouse
+       SET warehouse_name = #{w.warehouseName},
+           postal_code = #{w.postalCode},
+           address = #{w.address},
+           tel = #{w.tel},
+           enabled = #{w.enabled},
+           version = version + 1,
+           updated_at = #{now},
+           updated_by = #{operatorId}
+     WHERE warehouse_id = #{w.warehouseId}
+       AND version = #{w.version}
+  </update>
 </mapper>

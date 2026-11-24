@@ -28,6 +28,12 @@ public final class MessageId {
   /** {0}は{1}文字以内で入力してください。 */
   public static final String E_MAX_LENGTH = "E-002";
 
+  /** {0}は{1}以上{2}以下の数値で入力してください。 */
+  public static final String E_RANGE = "E-003";
+
+  /** {0}の形式が正しくありません。 */
+  public static final String E_FORMAT = "E-004";
+
   /** {0}は既に登録されています。 */
   public static final String E_DUPLICATE = "E-005";
 

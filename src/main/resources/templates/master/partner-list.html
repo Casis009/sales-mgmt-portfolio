@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<!-- SCR-121 取引先一覧（F-103）。登録・編集のリンクは営業担当・経理担当・システム管理者のみ表示（権限マトリクス 2.1） -->
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ja">
+<head th:replace="~{fragments/layout :: head('取引先一覧')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<nav th:replace="~{fragments/layout :: breadcrumb('マスタ管理', '取引先一覧')}"></nav>
+<main class="content" th:with="labels=${T(jp.co.hikari.hanbai.master.service.MasterLabels)}">
+  <div th:replace="~{fragments/layout :: messages}"></div>
+
+  <form th:action="@{/master/partners}" th:object="${searchForm}" method="get" class="form search-form">
+    <input type="hidden" name="search" value="1">
+    <div class="row">
+      <div class="field">
+        <label for="keyword">取引先コード・取引先名・カナ</label>
+        <input type="text" th:field="*{keyword}" maxlength="50">
+        <p class="field-error" th:if="${#fields.hasErrors('keyword')}" th:errors="*{keyword}"></p>
+      </div>
+      <div class="field">
+        <label for="partyType">区分</label>
+        <select th:field="*{partyType}">
+          <option value="">（すべて）</option>
+          <option value="CUSTOMER">得意先</option>
+          <option value="SUPPLIER">仕入先</option>
+        </select>
+      </div>
+      <div class="field inline-options">
+        <label><input type="checkbox" th:field="*{includeDisabled}"> 無効の取引先も表示する</label>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">検索</button>
+      <a sec:authorize="hasAnyRole('SALES', 'ACCOUNTING', 'ADMIN')" th:href="@{/master/partners/new}" class="btn">新規登録</a>
+    </div>
+  </form>
+
+  <th:block th:if="${rows != null and !#lists.isEmpty(rows)}">
+    <nav th:replace="~{fragments/layout :: pagination(${pagination})}"></nav>
+    <table class="list">
+      <thead>
+      <tr>
+        <th scope="col">取引先コード</th>
+        <th scope="col">取引先名</th>
+        <th scope="col">区分</th>
+        <th scope="col">締日・支払条件</th>
+        <th scope="col">電話番号</th>
+        <th scope="col">状態</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="r : ${rows}">
+        <td>
+          <a sec:authorize="hasAnyRole('SALES', 'ACCOUNTING', 'ADMIN')" th:href="@{/master/partners/{id}/edit(id=${r.partnerId})}" th:text="${r.partnerCode}">C001</a>
+          <span sec:authorize="!hasAnyRole('SALES', 'ACCOUNTING', 'ADMIN')" th:text="${r.partnerCode}">C001</span>
+        </td>
+        <td>
+          <span th:text="${r.partnerName}">株式会社〇〇電設</span>
+          <br th:if="${r.partnerNameKana != null}"><small th:text="${r.partnerNameKana}">マルマルデンセツ</small>
+        </td>
+        <td th:text="${labels.partyType(r)}">得意先</td>
+        <td th:text="${labels.terms(r)}">末日締め 翌月末日払い</td>
+        <td th:text="${r.tel}">092-000-0000</td>
+        <td><span th:text="${r.enabled} ? '有効' : '無効'" class="badge">有効</span></td>
+      </tr>
+      </tbody>
+    </table>
+    <nav th:replace="~{fragments/layout :: pagination(${pagination})}"></nav>
+  </th:block>
+</main>
+</body>
+</html>

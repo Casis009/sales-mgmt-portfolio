@@ -20,4 +20,23 @@ public interface OperationLogTarget {
    * @return 主要な項目の変更内容（パスワードを含めない）。なしは null
    */
   String detail();
+
+  /**
+   * 対象キーと操作内容から作る。
+   *
+   * @param targetKey 対象キー
+   * @param detail 操作内容（なしは null）
+   * @return 操作ログの対象
+   */
+  static OperationLogTarget of(String targetKey, String detail) {
+    return new Simple(targetKey, detail);
+  }
+
+  /**
+   * 対象キーと操作内容だけを持つ実装。
+   *
+   * @param targetKey 対象キー
+   * @param detail 操作内容
+   */
+  record Simple(String targetKey, String detail) implements OperationLogTarget {}
 }

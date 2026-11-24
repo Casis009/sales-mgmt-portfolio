@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 商品マスタ（F-101、TBL-101） -->
+<mapper namespace="jp.co.hikari.hanbai.master.mapper.ProductMapper">
+
+  <resultMap id="listRow" type="jp.co.hikari.hanbai.master.dto.ProductListRow">
+    <constructor>
+      <arg column="product_id" javaType="_long"/>
+      <arg column="product_code" javaType="string"/>
+      <arg column="product_name" javaType="string"/>
+      <arg column="model_number" javaType="string"/>
+      <arg column="unit" javaType="string"/>
+      <arg column="standard_sales_price" javaType="java.math.BigDecimal"/>
+      <arg column="standard_purchase_price" javaType="java.math.BigDecimal"/>
+      <arg column="tax_category" javaType="jp.co.hikari.hanbai.common.code.TaxCategory"/>
+      <arg column="main_supplier_name" javaType="string"/>
+      <arg column="enabled" javaType="_boolean"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="where">
+    <where>
+      <if test="!c.includeDisabled">AND p.enabled</if>
+      <if test="c.supplierId != null">AND p.main_supplier_id = #{c.supplierId}</if>
+      <if test="c.keyword != null">
+        AND (p.product_code LIKE #{c.keywordPattern} ESCAPE '\'
+             OR p.product_name LIKE #{c.keywordPattern} ESCAPE '\'
+             OR p.model_number LIKE #{c.keywordPattern} ESCAPE '\')
+      </if>
+    </where>
+  </sql>
+
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM m_product p
+    <include refid="where"/>
+  </select>
+
+  <select id="search" resultMap="listRow">
+    SELECT p.product_id, p.product_code, p.product_name, p.model_number, p.unit,
+           p.standard_sales_price, p.standard_purchase_price, p.tax_category,
+           s.partner_name AS main_supplier_name, p.enabled
+      FROM m_product p
+      LEFT JOIN m_partner s ON s.partner_id = p.main_supplier_id
+    <include refid="where"/>
+     ORDER BY p.product_code
+     LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="findById" resultType="jp.co.hikari.hanbai.master.model.Product">
+    SELECT product_id, product_code, product_name, model_number, unit,
+           standard_sales_price, standard_purchase_price, tax_category,
+           main_supplier_id, enabled, version
+      FROM m_product
+     WHERE product_id = #{productId}
+  </select>
+
+  <select id="existsByCode" resultType="boolean">
+    SELECT EXISTS (SELECT 1 FROM m_product WHERE product_code = #{productCode})
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="p.productId" keyColumn="product_id">
+    INSERT INTO m_product (
+      product_code, product_name, model_number, unit,
+      standard_sales_price, standard_purchase_price, tax_category, main_supplier_id,
+      enabled, version, created_at, created_by, updated_at, updated_by
+    ) VALUES (
+      #{p.productCode}, #{p.productName}, #{p.modelNumber}, #{p.unit},
+      #{p.standardSalesPrice}, #{p.standardPurchasePrice}, #{p.taxCategory}, #{p.mainSupplierId},
+      #{p.enabled}, 0, #{now}, #{operatorId}, #{now}, #{operatorId}
+    )
+  </insert>
+
+  <update id="update">
+    UPDATE m_product
+       SET product_name = #{p.productName},
+           model_number = #{p.modelNumber},
+           unit = #{p.unit},
+           standard_sales_price = #{p.standardSalesPrice},
+           standard_purchase_price = #{p.standardPurchasePrice},
+           tax_category = #{p.taxCategory},
+           main_supplier_id = #{p.mainSupplierId},
+           enabled = #{p.enabled},
+           version = version + 1,
+           updated_at = #{now},
+           updated_by = #{operatorId}
+     WHERE product_id = #{p.productId}
+       AND version = #{p.version}
+  </update>
+</mapper>

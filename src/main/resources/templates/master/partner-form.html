@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!-- SCR-122 取引先登録・編集（F-103）。得意先の場合は締日・支払条件を必須とする（BR-32） -->
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head th:replace="~{fragments/layout :: head(${form.isNew()} ? '取引先登録' : '取引先編集')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<nav th:replace="~{fragments/layout :: breadcrumb('マスタ管理', ${form.isNew()} ? '取引先登録' : '取引先編集')}"></nav>
+<main class="content">
+  <div th:replace="~{fragments/layout :: messages}"></div>
+
+  <form th:action="${form.isNew()} ? @{/master/partners} : @{/master/partners/{id}(id=${form.partnerId})}"
+        th:object="${form}" method="post" class="form" data-once>
+    <input type="hidden" th:name="${T(jp.co.hikari.hanbai.common.web.TransactionTokenManager).PARAM}" th:value="${_txToken}">
+    <input type="hidden" th:field="*{version}">
+
+    <div class="field">
+      <label for="partnerCode">取引先コード <span class="req" aria-label="必須" th:if="${form.isNew()}">※</span></label>
+      <input th:if="${form.isNew()}" type="text" th:field="*{partnerCode}" maxlength="10">
+      <th:block th:unless="${form.isNew()}">
+        <span th:text="*{partnerCode}">C001</span>
+        <input type="hidden" th:field="*{partnerCode}">
+      </th:block>
+      <p class="hint" th:if="${form.isNew()}">半角英数字とハイフン10文字以内。登録後は変更できません。</p>
+      <p class="field-error" th:if="${#fields.hasErrors('partnerCode')}" th:errors="*{partnerCode}"></p>
+    </div>
+
+    <div class="field">
+      <label for="partnerName">取引先名 <span class="req" aria-label="必須">※</span></label>
+      <input type="text" th:field="*{partnerName}" maxlength="100">
+      <p class="field-error" th:if="${#fields.hasErrors('partnerName')}" th:errors="*{partnerName}"></p>
+    </div>
+
+    <div class="field">
+      <label for="partnerNameKana">取引先名カナ</label>
+      <input type="text" th:field="*{partnerNameKana}" maxlength="100">
+      <p class="hint">全角カタカナ（検索に使います）。</p>
+      <p class="field-error" th:if="${#fields.hasErrors('partnerNameKana')}" th:errors="*{partnerNameKana}"></p>
+    </div>
+
+    <fieldset class="field">
+      <legend>区分 <span class="req" aria-label="必須">※</span></legend>
+      <div class="inline-options">
+        <label><input type="checkbox" th:field="*{customer}"> 得意先</label>
+        <label><input type="checkbox" th:field="*{supplier}"> 仕入先</label>
+      </div>
+      <p class="field-error" th:if="${#fields.hasErrors('customer')}" th:errors="*{customer}"></p>
+    </fieldset>
+
+    <fieldset class="field">
+      <legend>締日・支払条件（得意先の場合は必須）</legend>
+      <div class="search-form row">
+        <div class="field">
+          <label for="closingDay">締日</label>
+          <select th:field="*{closingDay}">
+            <option value="">（選択）</option>
+            <option th:each="d : ${#numbers.sequence(1, 28)}" th:value="${d}" th:text="${d} + '日'">20日</option>
+            <option value="99">末日</option>
+          </select>
+          <p class="field-error" th:if="${#fields.hasErrors('closingDay')}" th:errors="*{closingDay}"></p>
+        </div>
+        <div class="field">
+          <label for="paymentMonthOffset">支払月</label>
+          <select th:field="*{paymentMonthOffset}">
+            <option value="">（選択）</option>
+            <option value="0">当月</option>
+            <option value="1">翌月</option>
+            <option value="2">翌々月</option>
+          </select>
+          <p class="field-error" th:if="${#fields.hasErrors('paymentMonthOffset')}" th:errors="*{paymentMonthOffset}"></p>
+        </div>
+        <div class="field">
+          <label for="paymentDay">支払日</label>
+          <select th:field="*{paymentDay}">
+            <option value="">（選択）</option>
+            <option th:each="d : ${#numbers.sequence(1, 28)}" th:value="${d}" th:text="${d} + '日'">10日</option>
+            <option value="99">末日</option>
+          </select>
+          <p class="field-error" th:if="${#fields.hasErrors('paymentDay')}" th:errors="*{paymentDay}"></p>
+        </div>
+      </div>
+      <p class="hint">得意先でない場合、締日・支払条件は保存しません。</p>
+    </fieldset>
+
+    <div class="field">
+      <label for="postalCode">郵便番号</label>
+      <input type="text" th:field="*{postalCode}" maxlength="8" placeholder="812-0011">
+      <p class="field-error" th:if="${#fields.hasErrors('postalCode')}" th:errors="*{postalCode}"></p>
+    </div>
+    <div class="field">
+      <label for="address">住所</label>
+      <input type="text" th:field="*{address}" maxlength="200">
+      <p class="hint">請求書の宛先に印字します。</p>
+      <p class="field-error" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></p>
+    </div>
+    <div class="field">
+      <label for="tel">電話番号</label>
+      <input type="text" th:field="*{tel}" maxlength="20">
+      <p class="field-error" th:if="${#fields.hasErrors('tel')}" th:errors="*{tel}"></p>
+    </div>
+    <div class="field">
+      <label for="fax">FAX番号</label>
+      <input type="text" th:field="*{fax}" maxlength="20">
+      <p class="field-error" th:if="${#fields.hasErrors('fax')}" th:errors="*{fax}"></p>
+    </div>
+    <div class="field">
+      <label for="contactName">担当者名</label>
+      <input type="text" th:field="*{contactName}" maxlength="50">
+      <p class="field-error" th:if="${#fields.hasErrors('contactName')}" th:errors="*{contactName}"></p>
+    </div>
+
+    <fieldset class="field">
+      <legend>状態</legend>
+      <div class="inline-options">
+        <label><input type="radio" th:field="*{enabled}" value="true"> 有効</label>
+        <label><input type="radio" th:field="*{enabled}" value="false"> 無効</label>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" class="btn btn-primary" th:text="${form.isNew()} ? '登録' : '更新'">登録</button>
+      <a th:href="@{/master/partners(search=1)}" class="btn">一覧へ戻る</a>
+    </div>
+  </form>
+</main>
+</body>
+</html>

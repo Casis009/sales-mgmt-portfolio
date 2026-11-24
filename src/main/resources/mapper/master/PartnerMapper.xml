@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 取引先マスタ（F-103、TBL-103） -->
+<mapper namespace="jp.co.hikari.hanbai.master.mapper.PartnerMapper">
+
+  <resultMap id="option" type="jp.co.hikari.hanbai.master.dto.PartnerOption">
+    <constructor>
+      <arg column="partner_id" javaType="_long"/>
+      <arg column="partner_code" javaType="string"/>
+      <arg column="partner_name" javaType="string"/>
+      <arg column="selectable" javaType="_boolean"/>
+    </constructor>
+  </resultMap>
+
+  <!-- 得意先・仕入先フラグは列名（is_customer）とプロパティ名（customer）が異なるため別名を付ける -->
+  <sql id="columns">
+    partner_id, partner_code, partner_name, partner_name_kana,
+    is_customer AS customer, is_supplier AS supplier,
+    postal_code, address, tel, fax, contact_name,
+    closing_day, payment_month_offset, payment_day, enabled, version
+  </sql>
+
+  <select id="findSupplierOptions" resultMap="option">
+    SELECT partner_id, partner_code, partner_name, (enabled AND is_supplier) AS selectable
+      FROM m_partner
+     WHERE (enabled AND is_supplier)
+     <if test="includeId != null">OR partner_id = #{includeId}</if>
+     ORDER BY partner_code
+  </select>
+
+  <select id="existsEnabledSupplier" resultType="boolean">
+    SELECT EXISTS (
+      SELECT 1 FROM m_partner WHERE partner_id = #{partnerId} AND enabled AND is_supplier)
+  </select>
+
+  <sql id="where">
+    <where>
+      <if test="!c.includeDisabled">AND enabled</if>
+      <if test="c.partyType != null and c.partyType.name() == 'CUSTOMER'">AND is_customer</if>
+      <if test="c.partyType != null and c.partyType.name() == 'SUPPLIER'">AND is_supplier</if>
+      <if test="c.keyword != null">
+        AND (partner_code LIKE #{c.keywordPattern} ESCAPE '\'
+             OR partner_name LIKE #{c.keywordPattern} ESCAPE '\'
+             OR partner_name_kana LIKE #{c.keywordPattern} ESCAPE '\')
+      </if>
+    </where>
+  </sql>
+
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM m_partner
+    <include refid="where"/>
+  </select>
+
+  <select id="search" resultType="jp.co.hikari.hanbai.master.model.Partner">
+    SELECT <include refid="columns"/>
+      FROM m_partner
+    <include refid="where"/>
+     ORDER BY partner_code
+     LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="findById" resultType="jp.co.hikari.hanbai.master.model.Partner">
+    SELECT <include refid="columns"/>
+      FROM m_partner
+     WHERE partner_id = #{partnerId}
+  </select>
+
+  <select id="existsByCode" resultType="boolean">
+    SELECT EXISTS (SELECT 1 FROM m_partner WHERE partner_code = #{partnerCode})
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="p.partnerId" keyColumn="partner_id">
+    INSERT INTO m_partner (
+      partner_code, partner_name, partner_name_kana, is_customer, is_supplier,
+      postal_code, address, tel, fax, contact_name,
+      closing_day, payment_month_offset, payment_day, enabled, version,
+      created_at, created_by, updated_at, updated_by
+    ) VALUES (
+      #{p.partnerCode}, #{p.partnerName}, #{p.partnerNameKana}, #{p.customer}, #{p.supplier},
+      #{p.postalCode}, #{p.address}, #{p.tel}, #{p.fax}, #{p.contactName},
+      #{p.closingDay}, #{p.paymentMonthOffset}, #{p.paymentDay}, #{p.enabled}, 0,
+      #{now}, #{operatorId}, #{now}, #{operatorId}
+    )
+  </insert>
+
+  <update id="update">
+    UPDATE m_partner
+       SET partner_name = #{p.partnerName},
+           partner_name_kana = #{p.partnerNameKana},
+           is_customer = #{p.customer},
+           is_supplier = #{p.supplier},
+           postal_code = #{p.postalCode},
+           address = #{p.address},
+           tel = #{p.tel},
+           fax = #{p.fax},
+           contact_name = #{p.contactName},
+           closing_day = #{p.closingDay},
+           payment_month_offset = #{p.paymentMonthOffset},
+           payment_day = #{p.paymentDay},
+           enabled = #{p.enabled},
+           version = version + 1,
+           updated_at = #{now},
+           updated_by = #{operatorId}
+     WHERE partner_id = #{p.partnerId}
+       AND version = #{p.version}
+  </update>
+</mapper>

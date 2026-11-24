@@ -41,7 +41,7 @@
       <select th:field="*{defaultWarehouseId}">
         <option value="">（なし）</option>
         <option th:each="w : ${warehouses}" th:value="${w.warehouseId()}"
-                th:text="${w.warehouseCode()} + ' ' + ${w.warehouseName()}">HQ 本社倉庫</option>
+                th:text="${w.label()}">HQ 本社倉庫</option>
       </select>
     </div>
 
